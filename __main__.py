@@ -19,10 +19,14 @@ def info_print(*args, **kwargs):
 def help_msg():
     print(f"İstandil Version {__version__} released at {__release_date__}")
     print()
-    print("    isd <FILE>")
+    print("    isd <subcommand>")
     print()
     print("usage:")
-    print("    <FILE> file to run")
+    print("    run <FILE> [-o(<FILE>.ist)]       transpile <FILE> to [-o] and run")
+    print("    transpile <FILE> [-o(<FILE>.ist)] transpile <FILE> to [-o]")
+    print("    help [hdir(:)]                    get help for [hdir]")
+    print("    version                           get version info")
+    print("    alias <subcommmand>               get aliases for <subcommand>")
 
 def run_from_source(src):
     with open(src, "r") as f:
@@ -31,18 +35,10 @@ def run_from_source(src):
         lexed = lxd["l"]
         lxerr = lxd["errs"]
         lxwarn = lxd["warns"]
+    for idx, i in enumerate(lexed):
+        info_print(f"lexed[{idx}]:", i)
     info_print("Executing")
     execute_program(lexed, lxerr, lxwarn)
-
-p = [
-    [Operators.Int, 69],
-    [Operators.Duplicate],
-    [Operators.Duplicate],
-    [Operators.Equals],
-    [Operators.If],
-    [Operators.Print],
-    [Operators.End],
-]
 
 def preprocess_program(prog):
     stack = []
@@ -51,11 +47,19 @@ def preprocess_program(prog):
         if op[0] == Operators.If:
             stack.append(ip)
             rprog.append([file, [Operators.If], line, col])
+        elif op[0] == Operators.Else:
+            a = stack.pop()
+            rprog[a][1] = [rprog[a][1][0], ip + 1]
+            stack.append(ip)
+            rprog.append([file, [Operators.Else], line, col])
         elif op[0] == Operators.End:
-            ipn = stack.pop()
-            rprog[ipn][1] = [rprog[ipn][1][0], ip]
+            a = stack.pop()
+            rprog[a][1] = [rprog[a][1][0], ip]
+            rprog.append([file, op, line, col])
         else:
             rprog.append([file, op, line, col])
+    for i in rprog:
+        info_print(i[1])
     return rprog + [[file, [Operators.EOF], line, col]]
 
 def execute_program(prog, enc_err, enc_warn):
@@ -91,8 +95,10 @@ def execute_program(prog, enc_err, enc_warn):
             stack.append(a*b)
             ip += 1
         elif op[0] == Operators.If:
-            if stack.pop() == True: ip += 1
+            if stack.pop(): ip += 1
             else: ip = op[1]
+        elif op[0] == Operators.Else:
+            ip = op[1]
         elif op[0] in (Operators.End, Operators.EOF): ip += 1
         elif op[0] == Operators.StackLength:
             stack.append(len(stack))
@@ -109,10 +115,25 @@ def execute_program(prog, enc_err, enc_warn):
         elif op[0] == Operators.Dump:
             stack.pop()
             ip += 1
+        elif op[0] == Operators.Division:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(b/a)
+            ip += 1
+        elif op[0] == Operators.Modulus:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(b%a)
+            ip += 1
         elif op[0] == Operators.Equals:
             a = stack.pop()
             b = stack.pop()
             stack.append(a==b)
+            ip += 1
+        elif op[0] == Operators.NotEqual:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(a!=b)
             ip += 1
         else: assert False, "Unknown or Unimplemented Operator: %s" % op[0]
     if len(stack) > 0: encountered_warn.append(SpecialWarnings.StackNotEmpty(stack, line, col, file))

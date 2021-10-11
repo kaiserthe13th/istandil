@@ -63,6 +63,22 @@ def lex(file, prog):
             elif dot_errd: rl.append([file, [Operators.Float, 0.0], line, col])
             else: rl.append([file, [Operators.Int, int(prog[cr:cr+tmpi])], line, col])
             cr += tmpi + 1
+        elif peek() == "!" and peek(1) == "=":
+            rl.append([file, [Operators.NotEqual], line, col])
+            cr += 2
+        elif peek() + peek(1) == ">=":
+            rl.append([file, [Operators.GreaterEqual], line, col])
+            cr += 2
+        elif peek() + peek(1) == "<=":
+            rl.append([file, [Operators.LesserEqual], line, col])
+            cr += 2
+        elif peek() + peek(1) == "++":
+            rl.append([file, [Operators.PlusPlus], line, col])
+        elif peek() + peek(1) == "--":
+            rl.append([file, [Operators.MinMin], line, col])
+        elif peek().isspace():
+            cr += 1
+            col += 1
         elif peek() == "+":
             rl.append([file, [Operators.Plus], line, col])
             cr += 1
@@ -75,6 +91,8 @@ def lex(file, prog):
         elif peek() == "/":
             rl.append([file, [Operators.Division], line, col])
             cr += 1
+        elif peek() == "%":
+            rl.append([file, [Operators.Modulus], line, col])
         elif peek() == "=":
             rl.append([file, [Operators.Equals], line, col])
             cr += 1
@@ -84,12 +102,6 @@ def lex(file, prog):
         elif peek() == ">":
             rl.append([file, [Operators.Greater], line, col])
             cr += 1
-        elif peek() == "!" and peek(1) == "=":
-            rl.append([file, [Operators.NotEqual], line, col])
-            cr += 2
-        elif peek().isspace():
-            cr += 1
-            col += 1
         else:
             tmpi = 0
             try:
