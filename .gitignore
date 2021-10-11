@@ -2,3 +2,4 @@ tests/
 __pycache__/
 std/
 .vscode/
+__isd_byt_store__/
